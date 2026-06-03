@@ -618,23 +618,53 @@ def ler_status_f680(page):
         print(f"    [bold green][+][/bold green] Firmware: {fw}")
         validar_firmware(fw, "680")
         
-        # Tenta ler Uptime da página de status, pode variar de ID
+        # Tenta ler Uptime do PPPoE (WAN)
         try:
+            print(" [bold blue]->[/bold blue] Lendo Uptime do PPPoE...")
+            try:
+                frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=status_wan2_if_t.gch'")
+            except:
+                page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=status_wan2_if_t.gch'")
+            page.wait_for_timeout(3000)
+            
             import re
-            texto_status = frame.locator("body").inner_text()
-            uptime_match = re.search(r'(\d+)\s*(?:days?|dias?)\s*(\d+)\s*(?:hours?|horas?)', texto_status, re.IGNORECASE)
-            if uptime_match:
-                dias = int(uptime_match.group(1))
-                horas = int(uptime_match.group(2))
-                total_horas = (dias * 24) + horas
-                print(f"    [bold green][+][/bold green] Uptime lido: {dias} dias e {horas} horas")
-                if total_horas >= 100:
-                    print(f"    [bold yellow][!][/bold yellow] ALERTA: A ONU está ligada há {total_horas} horas ininterruptas.")
-                    print("        [bold blue]->[/bold blue] Ação Recomendada: Reiniciar o equipamento para limpar memória.")
+            texto_status_wan = frame.locator("body").inner_text()
+            
+            if "omci_ipv4_pppoe_1" not in texto_status_wan.lower():
+                # Tenta outra URL comum para Status WAN na F680/F670
+                try:
+                    frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=IPv46_status_wan2_if_t.gch'")
+                except:
+                    page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=IPv46_status_wan2_if_t.gch'")
+                page.wait_for_timeout(3000)
+                texto_status_wan = frame.locator("body").inner_text()
+            
+            partes = re.split(r'omci_ipv4_pppoe_1', texto_status_wan, flags=re.IGNORECASE)
+            if len(partes) > 1:
+                texto_pppoe = partes[1][:500] # Pega até 500 caracteres após o nome da conexão
+                uptime_match = re.search(r'(\d+)\s*(?:days?|dias?|day|dia|d)\s*(\d+)\s*(?:hours?|horas?|hour|hora|h)', texto_pppoe, re.IGNORECASE)
+                uptime_hms = re.search(r'(\d+):(\d{2}):(\d{2})', texto_pppoe)
+                
+                if uptime_match:
+                    dias = int(uptime_match.group(1))
+                    horas = int(uptime_match.group(2))
+                    total_horas = (dias * 24) + horas
+                    print(f"    [bold green][+][/bold green] Uptime do PPPoE lido: {dias} dias e {horas} horas")
+                    if total_horas >= 100:
+                        print(f"    [bold yellow][!][/bold yellow] ALERTA: A conexão PPPoE está ativa há {total_horas} horas ininterruptas.")
+                        print("        [bold blue]->[/bold blue] Ação Recomendada: Reiniciar a interface para renovar a sessão no concentrador.")
+                elif uptime_hms:
+                    horas = int(uptime_hms.group(1))
+                    print(f"    [bold green][+][/bold green] Uptime do PPPoE lido: {horas} horas e {uptime_hms.group(2)} minutos")
+                    if horas >= 100:
+                        print(f"    [bold yellow][!][/bold yellow] ALERTA: A conexão PPPoE está ativa há {horas} horas ininterruptas.")
+                        print("        [bold blue]->[/bold blue] Ação Recomendada: Reiniciar a interface para renovar a sessão.")
+                else:
+                    print("    [bold yellow][!][/bold yellow] Não foi possível encontrar o formato de tempo do PPPoE na tela de Status.")
             else:
-                pass
-        except:
-            pass
+                print("    [bold yellow][!][/bold yellow] PPPoE 'omci_ipv4_pppoe_1' não encontrado na tabela de conexões WAN.")
+        except Exception as e:
+            print(f"    [bold red][-][/bold red] Falha ao ler Uptime PPPoE: {str(e)}")
     except:
         print("    [bold red][-][/bold red] Falha ao ler Serial/Firmware")
 
