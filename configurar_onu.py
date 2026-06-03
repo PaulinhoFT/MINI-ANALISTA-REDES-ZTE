@@ -119,13 +119,13 @@ def validar_ip_dispositivo(ip_str, hostname, mac, inicio_ip, fim_ip, mask, ips_v
 def configurar_upnp_zte_f6600(page):
     print_header("Configurando UPnP (F6600)")
     try:
-        page.locator("text='Rede local'").first.click()
+        page.locator("text=/Rede local|Local Network/i").first.click()
         page.wait_for_timeout(1500)
         page.locator("#upnp").click()
         page.wait_for_timeout(1500)
         
-        if page.locator("text='Ligado'").first.is_visible():
-            page.locator("text='Ligado'").first.click()
+        if page.locator("text=/Ligado|On/i").first.is_visible():
+            page.locator("text=/Ligado|On/i").first.click()
         else:
             radio = page.locator("input[type='radio'][value='1']")
             if radio.count() > 0:
@@ -139,6 +139,13 @@ def configurar_upnp_zte_f6600(page):
         print("[bold green][+][/bold green] UPnP ativado!")
     except Exception as e:
         print(f"[bold red][-][/bold red] Erro UPnP: {str(e)}")
+        try:
+            page.screenshot(path=r"C:\Users\Paulo Felix\.gemini\antigravity\scratch\debug_f6600_upnp_erro.png")
+            with open(r"C:\Users\Paulo Felix\.gemini\antigravity\scratch\debug_f6600_upnp_erro.html", "w", encoding="utf-8") as f:
+                f.write(page.content())
+        except:
+            pass
+
 
 
 def configurar_sntp_f6600(page):
@@ -178,8 +185,12 @@ def configurar_sntp_f6600(page):
         print("[bold green][+][/bold green] SNTP configurado com sucesso!")
     except Exception as e:
         print(f"[bold red][-][/bold red] Erro SNTP: {str(e)}")
-
-
+        try:
+            page.screenshot(path=r"C:\Users\Paulo Felix\.gemini\antigravity\scratch\debug_f6600_sntp_erro.png")
+            with open(r"C:\Users\Paulo Felix\.gemini\antigravity\scratch\debug_f6600_sntp_erro.html", "w", encoding="utf-8") as f:
+                f.write(page.content())
+        except:
+            pass
 def ler_status_f6600(page):
     print_header("Lendo Status (F6600)")
     
