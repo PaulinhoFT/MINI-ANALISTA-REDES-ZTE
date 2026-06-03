@@ -648,9 +648,9 @@ def ler_status_f680(page):
         
         import re
         texto_pon = frame.locator("body").inner_text()
-        # Regex abrangente para variações de RX/TX Power na ZTE F680
-        rx_match = re.search(r'(?:Rx|Receive|Input).*?Power.*?([-0-9.]+)\s*(?:dBm)?', texto_pon, re.IGNORECASE)
-        tx_match = re.search(r'(?:Tx|Transmit|Output).*?Power.*?([-0-9.]+)\s*(?:dBm)?', texto_pon, re.IGNORECASE)
+        # Regex abrangente para variações de RX/TX Power na ZTE F680 (Incluindo firmwares traduzidas)
+        rx_match = re.search(r'(?:Rx.*?Power|Receive.*?Power|Input.*?Power|Energia de entrada.*?ptico)[^\d-]*([-0-9.]+)', texto_pon, re.IGNORECASE)
+        tx_match = re.search(r'(?:Tx.*?Power|Transmit.*?Power|Output.*?Power|Potência de saída.*?ptico)[^\d-]*([-0-9.]+)', texto_pon, re.IGNORECASE)
         
         if rx_match:
             potencia_rx = float(rx_match.group(1))
