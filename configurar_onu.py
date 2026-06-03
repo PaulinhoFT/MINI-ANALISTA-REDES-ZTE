@@ -563,7 +563,7 @@ def configurar_upnp_zte_f680(page):
         try:
             frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=app_upnp_conf_t.gch'")
         except:
-            page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=app_upnp_conf_t.gch'")
+            pass
         page.wait_for_timeout(3000)
         
         estado = frame.locator("#Frm_EnableUPnPIGD").is_checked()
@@ -585,7 +585,7 @@ def configurar_sntp_zte_f680(page):
         try:
             frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=net_sntp_conf_t.gch'")
         except:
-            page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=net_sntp_conf_t.gch'")
+            pass
         page.wait_for_timeout(3000)
         
         print("[bold cyan][*][/bold cyan] Inserindo IP do servidor SNTP (168.121.96.25)...")
@@ -610,7 +610,7 @@ def ler_status_f680(page):
         try:
             frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=status_dev_info_t.gch'")
         except:
-            page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=status_dev_info_t.gch'")
+            pass
         page.wait_for_timeout(3000)
         serial = frame.locator("#Frm_PonSerialNumber").inner_text().strip()
         fw = frame.locator("#Frm_SoftwareVer").inner_text().strip()
@@ -624,7 +624,7 @@ def ler_status_f680(page):
             try:
                 frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=status_wan2_if_t.gch'")
             except:
-                page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=status_wan2_if_t.gch'")
+                pass
             page.wait_for_timeout(3000)
             
             import re
@@ -635,7 +635,7 @@ def ler_status_f680(page):
                 try:
                     frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=IPv46_status_wan2_if_t.gch'")
                 except:
-                    page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=IPv46_status_wan2_if_t.gch'")
+                    pass
                 page.wait_for_timeout(3000)
                 texto_status_wan = frame.locator("body").inner_text()
             
@@ -673,7 +673,7 @@ def ler_status_f680(page):
         try:
             frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=pon_status_link_info_t.gch'")
         except:
-            page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=pon_status_link_info_t.gch'")
+            pass
         page.wait_for_timeout(3000)
         
         import re
@@ -719,7 +719,7 @@ def ler_status_f680(page):
         try:
             frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=net_dhcp_dynamic_t.gch'")
         except:
-            page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=net_dhcp_dynamic_t.gch'")
+            pass
         page.wait_for_timeout(3000)
         
         inicio_ip = frame.locator("#MinAddress").get_attribute("value", timeout=2000)
@@ -750,7 +750,7 @@ def ler_status_f680(page):
         try:
             frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=topo_v2_t.gch'")
         except:
-            page.evaluate("window.location.href = 'getpage.gch?pid=1002&nextpage=topo_v2_t.gch'")
+            pass
         page.wait_for_timeout(4000)
         count = frame.locator("input[id^='HostName0M']").count()
         
