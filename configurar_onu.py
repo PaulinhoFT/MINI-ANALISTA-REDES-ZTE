@@ -354,6 +354,14 @@ def ler_status_f6600(page):
             
             if num_dispositivos == 0:
                 # Fallback para firmware desatualizada (Ex: V9.0.10P6N6 - Layout "legacy")
+                
+                # A topologia legacy carrega via AJAX e pode ser lenta. 
+                # Vamos aguardar até 5s para que apareça pelo menos o roteador + 1 cliente (nth(1)).
+                try:
+                    page.locator("div[title*='Device:']").nth(1).wait_for(timeout=5000)
+                except:
+                    pass
+                    
                 legacy_devs = page.locator("div[title*='Device:']")
                 count_legacy = legacy_devs.count()
                 
@@ -423,6 +431,9 @@ def ler_status_f6600(page):
                             for ap in aparelhos:
                                 print(ap)
                                 
+                    if all(len(a) == 0 for a in grupos_legado.values()):
+                        print("    [bold green][+][/bold green] Nenhum dispositivo cliente conectado encontrado (o único ícone na topologia era o próprio roteador, que foi ocultado).")
+
                     if conflitos_ip or problemas_rssi:
                         print("\n    [bold yellow][!][/bold yellow] ATENÇÃO - PROBLEMAS ENCONTRADOS:")
                         for c in conflitos_ip:
