@@ -289,6 +289,7 @@ def ler_status_f6600(page):
         print(" [bold blue]->[/bold blue] Lendo Configuração DHCP...")
         inicio_ip = ""
         fim_ip = ""
+        gw = ""
         dhcp_leases = {}
         
         try:
@@ -394,6 +395,13 @@ def ler_status_f6600(page):
                         if dhcp_leases and mac.lower() in dhcp_leases and (ip == "Sem IP" or not ip):
                             ip = dhcp_leases[mac.lower()]
                             
+                        # Ignora o próprio roteador para não acusar falso conflito (F6600 Firmware Antigo)
+                        try:
+                            if (gw and ip == gw) or (hostname and hostname.upper().startswith("ZTE")):
+                                continue
+                        except:
+                            pass
+                            
                         alerta_ip, msg_conflito = validar_ip_dispositivo(ip, hostname, mac, inicio_ip, fim_ip, mask, ips_vistos)
                         if msg_conflito:
                             conflitos_ip.append(msg_conflito)
@@ -454,6 +462,13 @@ def ler_status_f6600(page):
                     rssi_str = r_loc.first.text_content(timeout=2000).strip() if r_loc.count() > 0 else ""
                     
                     ip = dhcp_leases.get(mac, "Fixo/Desconhecido")
+                    
+                    # Ignora o próprio roteador para não acusar falso conflito (F6600)
+                    try:
+                        if (gw and ip == gw) or (hostname and hostname.upper().startswith("ZTE")):
+                            continue
+                    except:
+                        pass
                     
                     # Checagens de IP via função pura
                     alerta_ip, msg_conflito = validar_ip_dispositivo(ip, hostname, mac, inicio_ip, fim_ip, mask, ips_vistos)
