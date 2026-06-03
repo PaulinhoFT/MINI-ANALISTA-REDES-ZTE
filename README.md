@@ -50,5 +50,5 @@ pytest test_configurar_onu.py -v
 - `pytest`: Para testes de unidade.
 
 ## 📝 Avisos
-- O script por padrão tenta usar o usuário `multipro` / senha `multipro`. Caso suas ONUs usem credenciais diferentes, basta editar no arquivo `configurar_onu.py` na última linha de execução.
+- O script por padrão tenta usar um usuario padrão da ONU. Caso suas ONUs usem credenciais diferentes, basta editar no arquivo `configurar_onu.py` na última linha de execução.
 - Para a função de "Validador de Firmware" funcionar, basta colocar seus arquivos binários oficiais de firmware de atualização na pastinha local `Firmwares/`.
