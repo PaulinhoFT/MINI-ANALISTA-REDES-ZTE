@@ -621,50 +621,75 @@ def ler_status_f680(page):
         # Tenta ler Uptime do PPPoE (WAN)
         try:
             print(" [bold blue]->[/bold blue] Lendo Uptime do PPPoE...")
+            
+            # Tenta clicar no menu "Conexão WAN" na barra lateral (leftFrame)
+            nav_success = False
             try:
-                frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=status_wan2_if_t.gch'")
+                left_frame = page.frame_locator("[name='leftFrame']")
+                if left_frame.locator("text=/Conexão WAN|WAN Connection/i").count() > 0:
+                    left_frame.locator("text=/Conexão WAN|WAN Connection/i").first.click(timeout=3000)
+                    nav_success = True
             except:
                 pass
+                
+            if not nav_success:
+                # Tenta no menu principal caso não haja leftFrame
+                try:
+                    if page.locator("text=/Conexão WAN|WAN Connection/i").count() > 0:
+                        page.locator("text=/Conexão WAN|WAN Connection/i").first.click(timeout=3000)
+                except:
+                    # Último recurso: URL genérica de WAN mais comum para F680 V6
+                    try:
+                        page.evaluate("window.frames['mainFrame'].location.href = 'getpage.gch?pid=1002&nextpage=status_wan_if_t.gch'")
+                    except:
+                        pass
+            
             page.wait_for_timeout(3000)
             
             import re
-            texto_status_wan = frame.locator("body").inner_text()
-            
+            try:
+                texto_status_wan = frame.locator("body").inner_text(timeout=5000)
+            except:
+                texto_status_wan = ""
+                
             if "omci_ipv4_pppoe_1" not in texto_status_wan.lower():
-                # Tenta outra URL comum para Status WAN na F680/F670
+                # Falhou em encontrar o PPPoE, vamos restaurar a navegação do frame para não quebrar os próximos passos
                 try:
-                    frame.locator("body").evaluate("() => window.location.href = 'getpage.gch?pid=1002&nextpage=IPv46_status_wan2_if_t.gch'")
+                    page.evaluate("window.frames['mainFrame'].location.href = 'getpage.gch?pid=1002&nextpage=status_dev_info_t.gch'")
+                    page.wait_for_timeout(2000)
                 except:
                     pass
-                page.wait_for_timeout(3000)
-                texto_status_wan = frame.locator("body").inner_text()
-            
-            partes = re.split(r'omci_ipv4_pppoe_1', texto_status_wan, flags=re.IGNORECASE)
-            if len(partes) > 1:
-                texto_pppoe = partes[1][:500] # Pega até 500 caracteres após o nome da conexão
-                uptime_match = re.search(r'(\d+)\s*(?:days?|dias?|day|dia|d)\s*(\d+)\s*(?:hours?|horas?|hour|hora|h)', texto_pppoe, re.IGNORECASE)
-                uptime_hms = re.search(r'(\d+):(\d{2}):(\d{2})', texto_pppoe)
-                
-                if uptime_match:
-                    dias = int(uptime_match.group(1))
-                    horas = int(uptime_match.group(2))
-                    total_horas = (dias * 24) + horas
-                    print(f"    [bold green][+][/bold green] Uptime do PPPoE lido: {dias} dias e {horas} horas")
-                    if total_horas >= 100:
-                        print(f"    [bold yellow][!][/bold yellow] ALERTA: A conexão PPPoE está ativa há {total_horas} horas ininterruptas.")
-                        print("        [bold blue]->[/bold blue] Ação Recomendada: Reiniciar a interface para renovar a sessão no concentrador.")
-                elif uptime_hms:
-                    horas = int(uptime_hms.group(1))
-                    print(f"    [bold green][+][/bold green] Uptime do PPPoE lido: {horas} horas e {uptime_hms.group(2)} minutos")
-                    if horas >= 100:
-                        print(f"    [bold yellow][!][/bold yellow] ALERTA: A conexão PPPoE está ativa há {horas} horas ininterruptas.")
-                        print("        [bold blue]->[/bold blue] Ação Recomendada: Reiniciar a interface para renovar a sessão.")
-                else:
-                    print("    [bold yellow][!][/bold yellow] Não foi possível encontrar o formato de tempo do PPPoE na tela de Status.")
+                print("    [bold yellow][!][/bold yellow] PPPoE 'omci_ipv4_pppoe_1' não encontrado na tela.")
             else:
-                print("    [bold yellow][!][/bold yellow] PPPoE 'omci_ipv4_pppoe_1' não encontrado na tabela de conexões WAN.")
+                partes = re.split(r'omci_ipv4_pppoe_1', texto_status_wan, flags=re.IGNORECASE)
+                if len(partes) > 1:
+                    texto_pppoe = partes[1][:500] # Pega até 500 caracteres após o nome da conexão
+                    uptime_match = re.search(r'(\d+)\s*(?:days?|dias?|day|dia|d)\s*(\d+)\s*(?:hours?|horas?|hour|hora|h)', texto_pppoe, re.IGNORECASE)
+                    uptime_hms = re.search(r'(\d+):(\d{2}):(\d{2})', texto_pppoe)
+                    
+                    if uptime_match:
+                        dias = int(uptime_match.group(1))
+                        horas = int(uptime_match.group(2))
+                        total_horas = (dias * 24) + horas
+                        print(f"    [bold green][+][/bold green] Uptime do PPPoE lido: {dias} dias e {horas} horas")
+                        if total_horas >= 100:
+                            print(f"    [bold yellow][!][/bold yellow] ALERTA: A conexão PPPoE está ativa há {total_horas} horas ininterruptas.")
+                            print("        [bold blue]->[/bold blue] Ação Recomendada: Reiniciar a interface para renovar a sessão no concentrador.")
+                    elif uptime_hms:
+                        horas = int(uptime_hms.group(1))
+                        print(f"    [bold green][+][/bold green] Uptime do PPPoE lido: {horas} horas e {uptime_hms.group(2)} minutos")
+                        if horas >= 100:
+                            print(f"    [bold yellow][!][/bold yellow] ALERTA: A conexão PPPoE está ativa há {horas} horas ininterruptas.")
+                            print("        [bold blue]->[/bold blue] Ação Recomendada: Reiniciar a interface para renovar a sessão.")
+                    else:
+                        print("    [bold yellow][!][/bold yellow] Não foi possível encontrar o formato de tempo do PPPoE na tela de Status.")
         except Exception as e:
             print(f"    [bold red][-][/bold red] Falha ao ler Uptime PPPoE: {str(e)}")
+            # Tenta restaurar o frame em caso de erro extremo
+            try:
+                page.evaluate("window.frames['mainFrame'].location.href = 'getpage.gch?pid=1002&nextpage=status_dev_info_t.gch'")
+            except:
+                pass
     except:
         print("    [bold red][-][/bold red] Falha ao ler Serial/Firmware")
 
