@@ -352,14 +352,84 @@ def ler_status_f6600(page):
             num_dispositivos = linhas.count()
             
             if num_dispositivos == 0:
-                print("    [bold cyan][*][/bold cyan] Nenhum dispositivo detectado com os IDs da F680. Gravando telemetria...")
-                try:
-                    page.screenshot(path=r"C:\Users\Paulo Felix\.gemini\antigravity\scratch\debug_topologia_f6600.png")
-                    with open(r"C:\Users\Paulo Felix\.gemini\antigravity\scratch\debug_topologia_f6600.html", "w", encoding="utf-8") as f:
-                        f.write(page.content())
-                except:
-                    pass
-                print("    [bold green][+][/bold green] Nenhum dispositivo conectado à LAN/WLAN no momento.")
+                # Fallback para firmware desatualizada (Ex: V9.0.10P6N6 - Layout "legacy")
+                legacy_devs = page.locator("div[title*='Device:']")
+                count_legacy = legacy_devs.count()
+                
+                if count_legacy > 0:
+                    print("    [bold cyan][*][/bold cyan] Topologia antiga detectada (layout master-device). Mapeando...")
+                    conflitos_ip = []
+                    problemas_rssi = []
+                    ips_vistos = set()
+                    grupos_legado = {"Rede Cabeada (LAN)": [], "Rede Wi-Fi 2.4GHz": [], "Rede Wi-Fi 5GHz": [], "Desconhecido": []}
+                    
+                    for i in range(count_legacy):
+                        title_text = legacy_devs.nth(i).get_attribute("title")
+                        dev_id = legacy_devs.nth(i).get_attribute("id") or ""
+                        
+                        if not title_text or "Device:" not in title_text:
+                            continue
+                            
+                        if "5G" in dev_id:
+                            tipo_rede = "Rede Wi-Fi 5GHz"
+                        elif "2G" in dev_id or "2.4G" in dev_id:
+                            tipo_rede = "Rede Wi-Fi 2.4GHz"
+                        elif "lan" in dev_id.lower():
+                            tipo_rede = "Rede Cabeada (LAN)"
+                        else:
+                            tipo_rede = "Desconhecido"
+                            
+                        hostname = "Desconhecido"
+                        mac = "00:00:00:00:00:00"
+                        ip = "Sem IP"
+                        rssi_str = "N/A"
+                        
+                        for line in title_text.split('\n'):
+                            line = line.strip()
+                            if line.startswith("Device:"): hostname = line.split("Device:")[1].strip()
+                            elif line.startswith("MAC:"): mac = line.split("MAC:")[1].strip()
+                            elif line.startswith("IP:"): ip = line.split("IP:")[1].strip()
+                            elif line.startswith("RSSI:"): rssi_str = line.split("RSSI:")[1].strip()
+                            
+                        if dhcp_leases and mac.lower() in dhcp_leases and (ip == "Sem IP" or not ip):
+                            ip = dhcp_leases[mac.lower()]
+                            
+                        alerta_ip, msg_conflito = validar_ip_dispositivo(ip, hostname, mac, inicio_ip, fim_ip, mask, ips_vistos)
+                        if msg_conflito:
+                            conflitos_ip.append(msg_conflito)
+                        
+                        grupos_legado[tipo_rede].append(f"        [bold magenta]•[/bold magenta] [white]{hostname}[/white] | [dim]MAC: {mac.upper()}[/dim] | [green]IP: {ip}[/green] | [cyan]RSSI: {rssi_str}[/cyan][bold red]{alerta_ip}[/bold red]")
+                        
+                        # Sinal Ruim (RSSI)
+                        if tipo_rede in ["Rede Wi-Fi 2.4GHz", "Rede Wi-Fi 5GHz"] and rssi_str != "N/A":
+                            try:
+                                rssi_val = float(rssi_str.replace("dBm", "").strip())
+                                if rssi_val <= -80:
+                                    problemas_rssi.append(f"Sinal muito fraco em {hostname} ({tipo_rede}): {rssi_str}. Pode causar lentidão.")
+                            except:
+                                pass
+                                
+                    for rede, aparelhos in grupos_legado.items():
+                        if aparelhos:
+                            print(f"\n    [bold magenta]=== {rede} ===[/bold magenta]")
+                            for ap in aparelhos:
+                                print(ap)
+                                
+                    if conflitos_ip or problemas_rssi:
+                        print("\n    [bold yellow][!][/bold yellow] ATENÇÃO - PROBLEMAS ENCONTRADOS:")
+                        for c in conflitos_ip:
+                            print(f"        [bold blue]->[/bold blue] {c}")
+                        for p in problemas_rssi:
+                            print(f"        [bold blue]->[/bold blue] {p}")
+                else:
+                    print("    [bold cyan][*][/bold cyan] Nenhum dispositivo detectado com os IDs da F680. Gravando telemetria...")
+                    try:
+                        page.screenshot(path=r"C:\Users\Paulo Felix\.gemini\antigravity\scratch\debug_topologia_f6600.png")
+                        with open(r"C:\Users\Paulo Felix\.gemini\antigravity\scratch\debug_topologia_f6600.html", "w", encoding="utf-8") as f:
+                            f.write(page.content())
+                    except:
+                        pass
+                    print("    [bold green][+][/bold green] Nenhum dispositivo conectado à LAN/WLAN no momento.")
             else:
                 print(f"    [bold green][+][/bold green] Foram encontrados {num_dispositivos} dispositivos na Topologia:")
                 
