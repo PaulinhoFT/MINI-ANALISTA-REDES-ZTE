@@ -10,6 +10,17 @@ console = Console()
 def print_header(texto):
     console.print(Panel(f"[bold cyan]🚀 {texto}[/bold cyan]", border_style="cyan", expand=False))
 
+def sair_do_wizard(page):
+    try:
+        page.evaluate('var btn = document.getElementById("Outquicksetup"); if(btn && btn.style.display !== "none") btn.click();')
+    except: pass
+    try:
+        loc = page.locator("text=/Sair da Configuração Rápida|Exit Quick Setup|Sair do Assistente/i").filter(visible=True)
+        if loc.count() > 0:
+            loc.first.click(force=True)
+            page.wait_for_timeout(2000)
+    except: pass
+
 def clicar_aplicar(page):
     # Procura botões com ID ou Type que indiquem salvar/aplicar e clica no primeiro VISÍVEL
     botoes = page.locator("button[id*='apply'], button[id*='submit'], input[type='submit'], input[type='button'][value*='Aplicar'], input[type='button'][value*='Submit'], input[type='button'][value*='Apply']")
@@ -118,14 +129,21 @@ def validar_ip_dispositivo(ip_str, hostname, mac, inicio_ip, fim_ip, mask, ips_v
 # ==========================================
 def configurar_upnp_zte_f6600(page):
     print_header("Configurando UPnP (F6600)")
+    sair_do_wizard(page)
     try:
-        page.locator("text=/Rede local|Local Network/i").first.click()
-        page.wait_for_timeout(1500)
-        page.locator("#upnp").click()
+        for _ in range(8):
+            try:
+                page.locator("text=/Rede local|Local Network/i").filter(visible=True).first.click(force=True)
+                page.wait_for_timeout(1000)
+                if page.locator("#upnp").is_visible():
+                    break
+            except: pass
+        
+        page.locator("#upnp").click(force=True)
         page.wait_for_timeout(1500)
         
         if page.locator("text=/Ligado|On/i").first.is_visible():
-            page.locator("text=/Ligado|On/i").first.click()
+            page.locator("text=/Ligado|On/i").first.click(force=True)
         else:
             radio = page.locator("input[type='radio'][value='1']")
             if radio.count() > 0:
@@ -150,11 +168,18 @@ def configurar_upnp_zte_f6600(page):
 
 def configurar_sntp_f6600(page):
     print_header("Configurando SNTP (F6600)")
+    sair_do_wizard(page)
     try:
         print("[bold cyan][*][/bold cyan] Acessando Internet > SNTP...")
-        page.locator("text=/Internet/i").first.click()
-        page.wait_for_timeout(1000)
-        page.locator("text=/SNTP/i").first.click()
+        for _ in range(8):
+            try:
+                page.locator("text=/Internet/i").filter(visible=True).first.click(force=True)
+                page.wait_for_timeout(1000)
+                if page.locator("text=/SNTP/i").filter(visible=True).first.is_visible():
+                    break
+            except: pass
+            
+        page.locator("text=/SNTP/i").filter(visible=True).first.click(force=True)
         page.wait_for_timeout(2000)
         
         print("[bold cyan][*][/bold cyan] Inserindo IP do servidor SNTP (168.121.96.25)...")
@@ -536,15 +561,30 @@ def ler_status_f6600(page):
 
 def configurar_mesh_wifi_f6600(page):
     print_header("Configurando Mesh Wi-Fi (F6600)")
+    sair_do_wizard(page)
     try:
         print("[bold cyan][*][/bold cyan] Acessando Rede local > WLAN...")
-        page.locator("text=/Rede local|Local Network/i").first.click()
-        page.wait_for_timeout(1000)
-        page.locator("text=/WLAN/i").first.click()
+        for _ in range(8):
+            try:
+                page.locator("text=/Rede local|Local Network/i").filter(visible=True).first.click(force=True)
+                page.wait_for_timeout(1000)
+                if page.locator("text=/WLAN/i").filter(visible=True).first.is_visible():
+                    break
+            except: pass
+            
+        page.locator("text=/WLAN/i").filter(visible=True).first.click(force=True)
         page.wait_for_timeout(2000)
         
         print("[bold cyan][*][/bold cyan] Procurando aba 'Mesh Wi-Fi'...")
-        page.locator("text=/Mesh Wi-Fi/i").first.click()
+        for _ in range(8):
+            try:
+                page.locator("text=/WLAN/i").filter(visible=True).first.click(force=True)
+                page.wait_for_timeout(1000)
+                if page.locator("text=/Mesh Wi-Fi/i").filter(visible=True).first.is_visible():
+                    break
+            except: pass
+            
+        page.locator("text=/Mesh Wi-Fi/i").filter(visible=True).first.click(force=True)
         page.wait_for_timeout(2000)
         
         print("    [bold cyan][*][/bold cyan] Salvando telemetria inicial do Mesh Wi-Fi...")
